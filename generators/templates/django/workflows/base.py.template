@@ -1,0 +1,178 @@
+"""
+Base workflow manager for {{ app_name }}.
+
+This module provides the base workflow manager for executing agent operations
+in containerized environments.
+"""
+
+import os
+import logging
+import importlib
+import inspect
+import pkgutil
+from typing import Dict, Any, List, Optional, Callable, Awaitable, Union
+from functools import wraps
+
+from django.conf import settings
+from django.contrib.auth import get_user_model
+
+from composio_agent_integration.discussion.manager import DiscussionManager
+from composio_agent_integration.e2b_interpreter import (
+    CodeInterpreterClient, AsyncCodeInterpreterClient
+)
+
+logger = logging.getLogger(__name__)
+
+User = get_user_model()
+
+class WorkflowManager:
+    """
+    Workflow manager for executing agent operations.
+    
+    This class manages the execution of workflows, which are sequences of
+    operations performed by agents in containerized environments.
+    """
+    
+    def __init__(
+        self,
+        discussion_manager: Optional[DiscussionManager] = None,
+        e2b_api_key: Optional[str] = None,
+        workflows_package: str = "{{ app_name }}.workflows"
+    ):
+        """
+        Initialize the workflow manager.
+        
+        Args:
+            discussion_manager: Discussion manager for storing results
+            e2b_api_key: E2B API key for code execution
+            workflows_package: Package where workflows are defined
+        """
+        self.discussion_manager = discussion_manager
+        self.e2b_api_key = e2b_api_key or getattr(settings, "E2B_API_KEY", os.environ.get("E2B_API_KEY"))
+        self.workflows_package = workflows_package
+        self.workflows: Dict[str, Callable] = {}
+        
+        # Initialize the code interpreter
+        self.interpreter = CodeInterpreterClient(
+            api_key=self.e2b_api_key,
+            discussion_manager=self.discussion_manager
+        )
+        
+        # Initialize the async code interpreter
+        self.async_interpreter = None
+        
+        # Discover workflows
+        self._discover_workflows()
+    
+    def _discover_workflows(self) -> None:
+        """Discover available workflows in the workflows package."""
+        try:
+            # Import the workflows package
+            package = importlib.import_module(self.workflows_package)
+            
+            # Get the package path
+            package_path = os.path.dirname(package.__file__)
+            
+            # Discover all modules in the package
+            for _, module_name, is_pkg in pkgutil.iter_modules([package_path]):
+                if not is_pkg and module_name != "base":
+                    # Import the module
+                    module = importlib.import_module(f"{self.workflows_package}.{module_name}")
+                    
+                    # Find workflow functions in the module
+                    for name, obj in inspect.getmembers(module):
+                        if (inspect.isfunction(obj) and 
+                            hasattr(obj, "_is_workflow") and 
+                            getattr(obj, "_is_workflow", False)):
+                            # Register the workflow
+                            workflow_id = getattr(obj, "_workflow_id", f"{module_name}.{name}")
+                            self.workflows[workflow_id] = obj
+                            logger.info(f"Discovered workflow: {workflow_id}")
+        except ImportError as e:
+            logger.warning(f"Failed to discover workflows: {e}")
+    
+    async def get_async_interpreter(self) -> AsyncCodeInterpreterClient:
+        """Get or create the async code interpreter."""
+        if self.async_interpreter is None:
+            self.async_interpreter = await AsyncCodeInterpreterClient.create(
+                api_key=self.e2b_api_key,
+                discussion_manager=self.discussion_manager
+            )
+        return self.async_interpreter
+    
+    def list_workflows(self) -> List[str]:
+        """
+        List available workflows.
+        
+        Returns:
+            List of workflow IDs
+        """
+        return list(self.workflows.keys())
+    
+    async def execute_workflow(
+        self,
+        workflow_id: str,
+        user_id: Union[str, int],
+        parameters: Dict[str, Any] = {}
+    ) -> Dict[str, Any]:
+        """
+        Execute a workflow with the given parameters.
+        
+        Args:
+            workflow_id: ID of the workflow to execute
+            user_id: ID of the user executing the workflow
+            parameters: Parameters for the workflow
+            
+        Returns:
+            Result of the workflow execution
+            
+        Raises:
+            ValueError: If the workflow is not found
+        """
+        # Check if the workflow exists
+        if workflow_id not in self.workflows:
+            raise ValueError(f"Workflow not found: {workflow_id}")
+        
+        # Get the workflow function
+        workflow_func = self.workflows[workflow_id]
+        
+        # Get the async interpreter
+        async_interpreter = await self.get_async_interpreter()
+        
+        # Execute the workflow
+        logger.info(f"Executing workflow: {workflow_id}")
+        result = await workflow_func(
+            user_id=user_id,
+            interpreter=async_interpreter,
+            **parameters
+        )
+        
+        # Store the result in the discussion manager
+        if self.discussion_manager:
+            try:
+                self.discussion_manager.add_discussion(
+                    user_id=user_id,
+                    message=f"Workflow execution: {workflow_id}\nResult: {result}"
+                )
+            except Exception as e:
+                logger.warning(f"Failed to store workflow result: {e}")
+        
+        return result
+
+
+def workflow(workflow_id: Optional[str] = None):
+    """
+    Decorator to mark a function as a workflow.
+    
+    Args:
+        workflow_id: Optional ID for the workflow (defaults to function name)
+        
+    Returns:
+        Decorated function
+    """
+    def decorator(func):
+        # Mark the function as a workflow
+        func._is_workflow = True
+        func._workflow_id = workflow_id or func.__name__
+        return func
+    return decorator

@@ -1,0 +1,243 @@
+"""
+Example data analysis workflow for {{ app_name }}.
+
+This module demonstrates how to create a workflow that performs
+data analysis using the E2B Code Interpreter.
+"""
+
+import logging
+from typing import Dict, Any, Union
+
+from composio_agent_integration.e2b_interpreter import AsyncCodeInterpreterClient
+from workflows.base import workflow
+
+logger = logging.getLogger(__name__)
+
+@workflow(workflow_id="data_analysis")
+async def data_analysis_workflow(
+    user_id: Union[str, int],
+    interpreter: AsyncCodeInterpreterClient,
+    dataset_url: str,
+    analysis_type: str = "basic"
+) -> Dict[str, Any]:
+    """
+    Perform data analysis on a dataset.
+    
+    Args:
+        user_id: ID of the user executing the workflow
+        interpreter: Async code interpreter client
+        dataset_url: URL of the dataset to analyze
+        analysis_type: Type of analysis to perform (basic, advanced)
+        
+    Returns:
+        Analysis results
+    """
+    logger.info(f"Starting data analysis workflow for user {user_id}")
+    
+    # Step 1: Download and load the dataset
+    load_code = f"""
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Download the dataset
+print(f"Downloading dataset from {dataset_url}")
+df = pd.read_csv("{dataset_url}")
+
+# Display basic information
+print("Dataset shape:", df.shape)
+print("\\nFirst 5 rows:")
+print(df.head())
+print("\\nColumn information:")
+print(df.info())
+print("\\nSummary statistics:")
+print(df.describe())
+
+# Return the dataset info
+result = {{
+    "shape": df.shape,
+    "columns": list(df.columns),
+    "dtypes": df.dtypes.astype(str).to_dict(),
+    "missing_values": df.isnull().sum().to_dict()
+}}
+"""
+    
+    load_result = await interpreter.execute_code(
+        code=load_code,
+        user_id=user_id,
+        language="python",
+        store_result=True
+    )
+    
+    # Step 2: Perform the analysis based on the type
+    if analysis_type == "basic":
+        analysis_code = """
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Continue with the previously loaded dataframe
+numeric_columns = df.select_dtypes(include=[np.number]).columns.tolist()
+
+# Basic statistics for numeric columns
+stats = {}
+for col in numeric_columns:
+    stats[col] = {
+        "mean": float(df[col].mean()),
+        "median": float(df[col].median()),
+        "std": float(df[col].std()),
+        "min": float(df[col].min()),
+        "max": float(df[col].max())
+    }
+
+# Correlation matrix
+correlation = df[numeric_columns].corr().to_dict()
+
+# Return the analysis results
+result = {
+    "statistics": stats,
+    "correlation": correlation
+}
+"""
+    else:  # advanced analysis
+        analysis_code = """
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+
+# Continue with the previously loaded dataframe
+numeric_columns = df.select_dtypes(include=[np.number]).columns.tolist()
+
+# Advanced statistics
+stats = {}
+for col in numeric_columns:
+    stats[col] = {
+        "mean": float(df[col].mean()),
+        "median": float(df[col].median()),
+        "std": float(df[col].std()),
+        "skewness": float(df[col].skew()),
+        "kurtosis": float(df[col].kurtosis()),
+        "quantiles": {
+            "25%": float(df[col].quantile(0.25)),
+            "50%": float(df[col].quantile(0.5)),
+            "75%": float(df[col].quantile(0.75)),
+            "90%": float(df[col].quantile(0.9))
+        }
+    }
+
+# Correlation matrix
+correlation = df[numeric_columns].corr().to_dict()
+
+# PCA analysis
+if len(numeric_columns) >= 2:
+    # Standardize the data
+    scaler = StandardScaler()
+    scaled_data = scaler.fit_transform(df[numeric_columns])
+    
+    # Apply PCA
+    pca = PCA()
+    pca_result = pca.fit_transform(scaled_data)
+    
+    # Get explained variance
+    explained_variance = pca.explained_variance_ratio_.tolist()
+    
+    # Get principal components
+    components = pca.components_.tolist()
+    
+    pca_analysis = {
+        "explained_variance": explained_variance,
+        "components": components,
+        "feature_importance": {
+            col: abs(pca.components_[0][i]) for i, col in enumerate(numeric_columns)
+        }
+    }
+else:
+    pca_analysis = {"error": "Not enough numeric columns for PCA"}
+
+# Return the analysis results
+result = {
+    "statistics": stats,
+    "correlation": correlation,
+    "pca_analysis": pca_analysis
+}
+"""
+    
+    analysis_result = await interpreter.execute_code(
+        code=analysis_code,
+        user_id=user_id,
+        language="python",
+        store_result=True
+    )
+    
+    # Step 3: Generate visualizations
+    viz_code = """
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import io
+import base64
+
+# Continue with the previously loaded dataframe
+numeric_columns = df.select_dtypes(include=[np.number]).columns.tolist()
+
+# Function to convert plot to base64
+def plot_to_base64(fig):
+    buf = io.BytesIO()
+    fig.savefig(buf, format='png')
+    buf.seek(0)
+    img_str = base64.b64encode(buf.read()).decode('utf-8')
+    buf.close()
+    return img_str
+
+# Create visualizations
+visualizations = {}
+
+# Histogram for each numeric column
+for col in numeric_columns[:5]:  # Limit to first 5 columns
+    fig, ax = plt.subplots(figsize=(8, 6))
+    sns.histplot(df[col], kde=True, ax=ax)
+    ax.set_title(f'Distribution of {col}')
+    visualizations[f"histogram_{col}"] = plot_to_base64(fig)
+    plt.close(fig)
+
+# Correlation heatmap
+if len(numeric_columns) > 1:
+    fig, ax = plt.subplots(figsize=(10, 8))
+    sns.heatmap(df[numeric_columns].corr(), annot=True, cmap='coolwarm', ax=ax)
+    ax.set_title('Correlation Heatmap')
+    visualizations["correlation_heatmap"] = plot_to_base64(fig)
+    plt.close(fig)
+
+# Scatter plot matrix for first 3 numeric columns
+if len(numeric_columns) >= 3:
+    fig, ax = plt.subplots(figsize=(12, 10))
+    sns.pairplot(df[numeric_columns[:3]])
+    plt.suptitle('Scatter Plot Matrix', y=1.02)
+    visualizations["scatter_matrix"] = plot_to_base64(plt.gcf())
+    plt.close(fig)
+
+# Return the visualizations
+result = {
+    "visualizations": visualizations
+}
+"""
+    
+    viz_result = await interpreter.execute_code(
+        code=viz_code,
+        user_id=user_id,
+        language="python",
+        store_result=True
+    )
+    
+    # Combine all results
+    combined_result = {
+        "dataset_info": load_result.get("result", {}).get("json", {}),
+        "analysis": analysis_result.get("result", {}).get("json", {}),
+        "visualizations": viz_result.get("result", {}).get("json", {}).get("visualizations", {})
+    }
+    
+    logger.info(f"Completed data analysis workflow for user {user_id}")
+    return combined_result
