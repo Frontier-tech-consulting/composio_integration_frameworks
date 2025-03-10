@@ -88,6 +88,9 @@ cd composio_integration_frameworks
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
+# Install development dependencies
+pip install -e ".[test]"
+
 # Install in development mode with all dependencies
 pip install -e ".[all]"
 
@@ -95,8 +98,33 @@ pip install -e ".[all]"
 pytest
 
 # Build the package
+pip install build
 python -m build
 ```
+
+### Troubleshooting Installation Issues
+
+If you encounter errors during installation, try these steps:
+
+1. **Package structure issues**: Ensure your directory structure matches the package configuration
+   ```bash
+   # Check that these directories exist at the root level
+   ls -la auth discussion utils generators e2b_interpreter fastapi django workflows
+   ```
+
+2. **TOML parsing errors**: If you get TOML parsing errors, check your pyproject.toml file
+   ```bash
+   # Validate your TOML file
+   pip install tomli
+   python -c "import tomli; tomli.loads(open('pyproject.toml', 'rb').read())"
+   ```
+
+3. **Dependency conflicts**: Try installing with fewer extras at a time
+   ```bash
+   pip install -e ".[fastapi]"
+   pip install -e ".[django]"
+   # Then add other extras one by one
+   ```
 
 ### Publishing Updates
 
@@ -113,66 +141,11 @@ When updating the package, follow these steps:
    python -m twine upload dist/*
    ```
 
-## Architecture
+## Integration Process
 
-The package follows a modular architecture designed for flexibility and extensibility:
-
-```mermaid
-graph TD
-    A[Client Application] --> B[Framework Layer]
-    B --> C[Authentication Layer]
-    B --> D[Discussion Management]
-    B --> E[Code Execution]
-    B --> F[Workflow Management]
-    C --> G[Composio AgentAuth API]
-    D --> H[Vector Database]
-    E --> I[E2B Sandbox]
-    F --> D
-    F --> E
-```
-
-### Core Components
-
-- **Authentication Layer**: Handles user authentication, token validation, and role-based access control
-- **Discussion Management**: Stores and retrieves discussions using vector databases
-- **Code Execution**: Executes code in secure sandboxes via E2B
-- **Workflow Management**: Orchestrates multi-step workflows with dependencies
-
-### Framework Integration
+The following diagram shows the step-by-step process for integrating the Composio framework:
 
 ```mermaid
-graph TD
-    subgraph "FastAPI Integration"
-        FA[FastAPI App] --> FM[Authentication Middleware]
-        FA --> FS[Security Dependencies]
-        FA --> FR[API Routes]
-    end
-    
-    subgraph "Django Integration"
-        DA[Django App] --> DB[Auth Backend]
-        DA --> DM[Middleware]
-        DA --> DV[Views]
-    end
-    
-    FM --> C[Authentication Layer]
-    FS --> C
-    DB --> C
-    DM --> C
-    
-    FR --> D[Discussion Management]
-    FR --> E[Code Execution]
-    FR --> F[Workflow Management]
-    
-    DV --> D
-    DV --> E
-    DV --> F
-```
-
-### State diagram for presentation: 
-
-
-```mermaid
-
 flowchart TD
     Start([Start Integration]) --> InstallPkg[Install Package]
     InstallPkg --> ChooseFramework{Choose Framework}
@@ -276,7 +249,60 @@ flowchart TD
     class Start,Deploy endpoint;
 ```
 
+## Architecture
 
+The package follows a modular architecture designed for flexibility and extensibility:
+
+```mermaid
+graph TD
+    A[Client Application] --> B[Framework Layer]
+    B --> C[Authentication Layer]
+    B --> D[Discussion Management]
+    B --> E[Code Execution]
+    B --> F[Workflow Management]
+    C --> G[Composio AgentAuth API]
+    D --> H[Vector Database]
+    E --> I[E2B Sandbox]
+    F --> D
+    F --> E
+```
+
+### Core Components
+
+- **Authentication Layer**: Handles user authentication, token validation, and role-based access control
+- **Discussion Management**: Stores and retrieves discussions using vector databases
+- **Code Execution**: Executes code in secure sandboxes via E2B
+- **Workflow Management**: Orchestrates multi-step workflows with dependencies
+
+### Framework Integration
+
+```mermaid
+graph TD
+    subgraph "FastAPI Integration"
+        FA[FastAPI App] --> FM[Authentication Middleware]
+        FA --> FS[Security Dependencies]
+        FA --> FR[API Routes]
+    end
+    
+    subgraph "Django Integration"
+        DA[Django App] --> DB[Auth Backend]
+        DA --> DM[Middleware]
+        DA --> DV[Views]
+    end
+    
+    FM --> C[Authentication Layer]
+    FS --> C
+    DB --> C
+    DM --> C
+    
+    FR --> D[Discussion Management]
+    FR --> E[Code Execution]
+    FR --> F[Workflow Management]
+    
+    DV --> D
+    DV --> E
+    DV --> F
+```
 
 ## API Endpoints
 
@@ -311,7 +337,7 @@ flowchart TD
 ### Basic Authentication
 
 ```python
-from composio_integration_frameworks.auth.client import register_user, login_user, get_user_info
+from auth.client import register_user, login_user, get_user_info
 
 # Register a new user
 user_data = register_user(
@@ -333,10 +359,10 @@ print(f"Logged in as: {user_info['username']} (Role: {user_info['role']})")
 
 ```python
 from fastapi import FastAPI, Depends
-from composio_integration_frameworks.fastapi.security import AgentAuthSecurity
-from composio_integration_frameworks.discussion.manager import DiscussionManager
-from composio_integration_frameworks.e2b_interpreter.client import E2BClient
-from composio_integration_frameworks.workflows.manager import WorkflowManager
+from fastapi.security import AgentAuthSecurity
+from discussion.manager import DiscussionManager
+from e2b_interpreter.client import E2BClient
+from workflows.manager import WorkflowManager
 
 # Initialize components
 app = FastAPI()
@@ -371,8 +397,8 @@ async def chat(message: str, user=Depends(auth_security)):
 # In views.py
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
-from composio_integration_frameworks.django.discussion import add_discussion, get_relevant_discussions
-from composio_integration_frameworks.django.e2b import execute_code
+from django.discussion import add_discussion, get_relevant_discussions
+from django.e2b import execute_code
 
 @login_required
 def chat_view(request):
@@ -395,8 +421,8 @@ def chat_view(request):
 ### Workflow Example
 
 ```python
-from composio_integration_frameworks.workflows.models import StepType
-from composio_integration_frameworks.workflows.manager import WorkflowManager
+from workflows.models import StepType
+from workflows.manager import WorkflowManager
 
 # Initialize workflow manager
 workflow_mgr = WorkflowManager(
@@ -439,7 +465,7 @@ The package provides a comprehensive exception hierarchy for robust error handli
 
 ```python
 # Authentication exceptions
-from composio_integration_frameworks.auth.exceptions import (
+from auth.exceptions import (
     AuthException,                # Base exception
     InvalidCredentialsError,      # Wrong username/password
     TokenExpiredError,            # Expired token
@@ -447,21 +473,21 @@ from composio_integration_frameworks.auth.exceptions import (
 )
 
 # Discussion exceptions
-from composio_integration_frameworks.discussion.exceptions import (
+from discussion.exceptions import (
     DiscussionException,          # Base exception
     VectorDBError,                # Vector database issues
     UserDiscussionAccessError     # Access control violation
 )
 
 # Code execution exceptions
-from composio_integration_frameworks.e2b_interpreter.exceptions import (
+from e2b_interpreter.exceptions import (
     CodeInterpreterException,     # Base exception
     SandboxError,                 # Sandbox issues
     ExecutionError                # Code execution failure
 )
 
 # Workflow exceptions
-from composio_integration_frameworks.workflows.exceptions import (
+from workflows.exceptions import (
     WorkflowError,                # Base exception
     WorkflowNotFoundError,        # Workflow not found
     WorkflowExecutionError        # Execution failure

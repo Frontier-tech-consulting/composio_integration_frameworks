@@ -10,14 +10,13 @@ if os.path.exists("README.md"):
 setup(
     name="composio_integration_frameworks",
     version="0.1.0",
-    packages=find_packages(include=["auth", "discussion", "utils", "generators", "e2b_interpreter", "fastapi", "django", "workflows"]),
     description="Integrate Composio's AgentAuth with FastAPI and Django",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Dhruv Malik",
     author_email="malikdhruv1994@gmail.com",
     url="https://github.com/Frontier-tech-consulting/composio_integration_frameworks",
-    packages=find_packages(include=["auth", "discussion", "utils", "generators", "e2b_interpreter", "fastapi", "django", "workflows"]),
+    packages=["auth", "discussion", "utils", "generators", "e2b_interpreter", "fastapi", "django", "workflows"],
     install_requires=[
         "requests>=2.28.0",
         "composio>=0.1.0",
@@ -66,7 +65,7 @@ setup(
     zip_safe=False,
     entry_points={
         "console_scripts": [
-            "composio-framework=composio_integration_frameworks.cli:main",
+            "composio-framework=cli:main",
         ],
     },
 )

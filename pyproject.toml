@@ -62,7 +62,7 @@ all = [
 ]
 
 [project.scripts]
-composio-framework = "composio_integration_frameworks.cli:main"
+composio-framework = "cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "."}
