@@ -66,8 +66,7 @@ composio-framework = "composio_integration_frameworks.cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "."}
-packages = ["composio_integration_frameworks"]
-include-package-data = true
+packages = ["auth", "discussion", "utils", "generators", "e2b_interpreter", "fastapi", "django", "workflows"]
 
 [tool.setuptools.exclude-package-data]
 "*" = ["*.pyc", "*.pyo", "__pycache__", "*.so", "*.dylib", "*~"]

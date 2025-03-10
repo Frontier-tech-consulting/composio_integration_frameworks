@@ -168,6 +168,116 @@ graph TD
     DV --> F
 ```
 
+### State diagram for presentation: 
+
+
+```mermaid
+
+flowchart TD
+    Start([Start Integration]) --> InstallPkg[Install Package]
+    InstallPkg --> ChooseFramework{Choose Framework}
+    
+    ChooseFramework -->|FastAPI| FastSetup[Setup FastAPI App]
+    ChooseFramework -->|Django| DjangoSetup[Setup Django Project]
+    
+    FastSetup --> ConfigAuth[Configure Authentication]
+    DjangoSetup --> ConfigAuth
+    
+    ConfigAuth --> ChooseVectorDB{Choose Vector DB}
+    ChooseVectorDB -->|Pinecone| SetupPinecone[Configure Pinecone]
+    ChooseVectorDB -->|Chroma| SetupChroma[Configure Chroma]
+    
+    SetupPinecone --> SetupDiscussion[Setup Discussion Manager]
+    SetupChroma --> SetupDiscussion
+    
+    SetupDiscussion --> NeedCodeExec{Need Code Execution?}
+    NeedCodeExec -->|Yes| SetupE2B[Configure E2B Client]
+    NeedCodeExec -->|No| SkipE2B[Skip E2B Setup]
+    
+    SetupE2B --> NeedWorkflow{Need Workflows?}
+    SkipE2B --> NeedWorkflow
+    
+    NeedWorkflow -->|Yes| SetupWorkflow[Configure Workflow Manager]
+    NeedWorkflow -->|No| SkipWorkflow[Skip Workflow Setup]
+    
+    SetupWorkflow --> IntegrateRoutes[Integrate Routes/Views]
+    SkipWorkflow --> IntegrateRoutes
+    
+    IntegrateRoutes --> TestIntegration[Test Integration]
+    TestIntegration --> Deploy([Deploy Application])
+    
+    subgraph "1. Installation"
+        InstallPkg
+        note1[/"pip install composio_integration_frameworks[options]"/]
+        InstallPkg --- note1
+    end
+    
+    subgraph "2. Framework Selection"
+        ChooseFramework
+        FastSetup
+        DjangoSetup
+        note2[/"Add middleware and dependencies"/]
+        FastSetup --- note2
+        note3[/"Configure auth backend"/]
+        DjangoSetup --- note3
+    end
+    
+    subgraph "3. Authentication Setup"
+        ConfigAuth
+        note4[/"Set API keys and configure roles"/]
+        ConfigAuth --- note4
+    end
+    
+    subgraph "4. Vector Database Selection"
+        ChooseVectorDB
+        SetupPinecone
+        SetupChroma
+        note5[/"Configure environment variables"/]
+        SetupPinecone --- note5
+        SetupChroma --- note5
+    end
+    
+    subgraph "5. Discussion Management"
+        SetupDiscussion
+        note6[/"Initialize DiscussionManager"/]
+        SetupDiscussion --- note6
+    end
+    
+    subgraph "6. Code Execution (Optional)"
+        NeedCodeExec
+        SetupE2B
+        SkipE2B
+        note7[/"Configure E2B API key"/]
+        SetupE2B --- note7
+    end
+    
+    subgraph "7. Workflow Management (Optional)"
+        NeedWorkflow
+        SetupWorkflow
+        SkipWorkflow
+        note8[/"Define workflow steps and dependencies"/]
+        SetupWorkflow --- note8
+    end
+    
+    subgraph "8. Integration & Deployment"
+        IntegrateRoutes
+        TestIntegration
+        Deploy
+        note9[/"Create endpoints/views for your application"/]
+        IntegrateRoutes --- note9
+    end
+
+    classDef decision fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef process fill:#bbf,stroke:#333,stroke-width:1px;
+    classDef endpoint fill:#bfb,stroke:#333,stroke-width:2px;
+    
+    class ChooseFramework,ChooseVectorDB,NeedCodeExec,NeedWorkflow decision;
+    class InstallPkg,FastSetup,DjangoSetup,ConfigAuth,SetupPinecone,SetupChroma,SetupDiscussion,SetupE2B,SkipE2B,SetupWorkflow,SkipWorkflow,IntegrateRoutes,TestIntegration process;
+    class Start,Deploy endpoint;
+```
+
+
+
 ## API Endpoints
 
 ### FastAPI Endpoints
