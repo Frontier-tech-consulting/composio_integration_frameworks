@@ -1,5 +1,10 @@
 # Composio Agent Integration
 
+[![PyPI version](https://badge.fury.io/py/composio-integration-frameworks.svg)](https://badge.fury.io/py/composio-integration-frameworks)
+[![Tests](https://github.com/Frontier-tech-consulting/composio_integration_frameworks/actions/workflows/tests.yml/badge.svg)](https://github.com/Frontier-tech-consulting/composio_integration_frameworks/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python Versions](https://img.shields.io/pypi/pyversions/composio-integration-frameworks.svg)](https://pypi.org/project/composio-integration-frameworks/)
+
 A comprehensive Python package for integrating Composio's AgentAuth architecture with FastAPI and Django web frameworks, along with vector database support, E2B code execution, and workflow management for AI agent applications.
 
 ## Features
@@ -124,21 +129,6 @@ If you encounter errors during installation, try these steps:
    pip install -e ".[fastapi]"
    pip install -e ".[django]"
    # Then add other extras one by one
-   ```
-
-### Publishing Updates
-
-When updating the package, follow these steps:
-
-1. Update version in `setup.py` and `pyproject.toml`
-2. Update CHANGELOG.md with your changes
-3. Build the distribution:
-   ```bash
-   python -m build
-   ```
-4. Upload to PyPI:
-   ```bash
-   python -m twine upload dist/*
    ```
 
 ## Integration Process
