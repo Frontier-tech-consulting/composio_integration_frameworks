@@ -3,7 +3,7 @@ requires = ["setuptools>=42", "wheel", "pip>=21.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "composio_agent_integration"
+name = "composio_integration_frameworks"
 version = "0.1.0"
 description = "Integrate Composio's AgentAuth with FastAPI and Django"
 readme = "README.md"
@@ -32,10 +32,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Frontier-tech-consulting/composio_agent_integration"
-Documentation = "https://github.com/Frontier-tech-consulting/composio_agent_integration#readme"
-Repository = "https://github.com/Frontier-tech-consulting/composio_agent_integration.git"
-Issues = "https://github.com/Frontier-tech-consulting/composio_agent_integration/issues"
+Homepage = "https://github.com/Frontier-tech-consulting/composio_integration_frameworks"
+Documentation = "https://github.com/Frontier-tech-consulting/composio_integration_frameworks#readme"
+Repository = "https://github.com/Frontier-tech-consulting/composio_integration_frameworks.git"
+Issues = "https://github.com/Frontier-tech-consulting/composio_integration_frameworks/issues"
 
 [project.optional-dependencies]
 fastapi = ["fastapi>=0.100.0", "pydantic>=2.0.0", "uvicorn>=0.15.0"]
@@ -62,11 +62,11 @@ all = [
 ]
 
 [project.scripts]
-composio-framework = "composio_agent_integration.cli:main"
+composio-framework = "composio_integration_frameworks.cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "."}
-packages = ["composio_agent_integration"]
+packages = ["composio_integration_frameworks"]
 include-package-data = true
 
 [tool.setuptools.exclude-package-data]

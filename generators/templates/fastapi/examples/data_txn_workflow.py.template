@@ -8,7 +8,7 @@ data analysis using the E2B Code Interpreter.
 import logging
 from typing import Dict, Any, Union
 
-from composio_agent_integration.e2b_interpreter import AsyncCodeInterpreterClient
+from composio_integration_frameworks.e2b_interpreter import AsyncCodeInterpreterClient
 from workflows.base import workflow
 
 logger = logging.getLogger(__name__)

@@ -12,8 +12,8 @@ import inspect
 import pkgutil
 from typing import Dict, Any, List, Optional, Callable, Awaitable, Union
 
-from composio_agent_integration.discussion.manager import DiscussionManager
-from composio_agent_integration.e2b_interpreter import (
+from composio_integration_frameworks.discussion.manager import DiscussionManager
+from composio_integration_frameworks.e2b_interpreter import (
     CodeInterpreterClient, AsyncCodeInterpreterClient
 )
 

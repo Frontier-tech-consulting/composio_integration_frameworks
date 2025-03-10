@@ -13,7 +13,7 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# Import components from composio_agent_integration
+# Import components from composio_integration_frameworks
 from ..auth.client import register_user, login_user
 from ..discussion.manager import DiscussionManager
 from ..e2b_interpreter import CodeInterpreterClient, AsyncCodeInterpreterClient
@@ -177,4 +177,4 @@ Example usage of the E2B Code Interpreter API:
 """
 
 # Run with:
-# uvicorn composio_agent_integration.fastapi.e2b_example:app --reload 
+# uvicorn composio_integration_frameworks.fastapi.e2b_example:app --reload 

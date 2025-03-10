@@ -18,5 +18,5 @@ urlpatterns = [
 #
 # urlpatterns = [
 #     # ... other URL patterns
-#     path('e2b/', include('composio_agent_integration.django.e2b_urls')),
+#     path('e2b/', include('composio_integration_frameworks.django.e2b_urls')),
 # ] 

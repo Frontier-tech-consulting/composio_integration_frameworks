@@ -13,7 +13,7 @@ from fastapi import FastAPI, Depends, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# Import components from composio_agent_integration
+# Import components from composio_integration_frameworks
 from ..auth.client import (
     register_user, login_user, get_user_info, validate_token, is_admin
 )

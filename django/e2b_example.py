@@ -169,14 +169,14 @@ Django Integration Configuration Guide:
 
 1. Install the package:
    ```bash
-   pip install composio_agent_integration[all]
+   pip install composio_integration_frameworks[all]
    ```
 
 2. Add to Django settings.py:
    ```python
    INSTALLED_APPS = [
        # ... other apps
-       'composio_agent_integration.django',
+       'composio_integration_frameworks.django',
    ]
    
    # E2B Code Interpreter configuration
@@ -203,7 +203,7 @@ Django Integration Configuration Guide:
    
    urlpatterns = [
        # ... other URL patterns
-       path('e2b/', include('composio_agent_integration.django.e2b_urls')),
+       path('e2b/', include('composio_integration_frameworks.django.e2b_urls')),
    ]
    ```
 
